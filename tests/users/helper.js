@@ -1,0 +1,57 @@
+const User = require("../../models/user");
+const {
+  initialUsers,
+  initialUsersWithHashedPasswords,
+} = require("./fakeUsers");
+
+const insertInitialUsers = async () => {
+  await User.create(initialUsersWithHashedPasswords);
+};
+
+const users = () => {
+  return initialUsers.map((user) => {
+    return { ...user };
+  });
+};
+
+const usersWithHashedPasswords = () => {
+  return initialUsersWithHashedPasswords.map((user) => {
+    return { ...user };
+  });
+};
+
+const admin = () => {
+  return { ...initialUsers[0] };
+};
+
+const usersInDb = async () => {
+  return await User.find({});
+};
+
+const deleteAll = async () => {
+  await User.deleteMany({});
+};
+
+const parseCookie = (cookie) => {
+  const parsedCookie = {};
+  cookie = cookie.split(";").map((prop) => prop.split("="));
+
+  for (let [key, val] of cookie) {
+    key = key.trim();
+    val = val ? val.trim() : true;
+
+    parsedCookie[key] = val;
+  }
+
+  return parsedCookie;
+};
+
+module.exports = {
+  insertInitialUsers,
+  admin,
+  users,
+  usersWithHashedPasswords,
+  usersInDb,
+  deleteAll,
+  parseCookie,
+};

@@ -105,3 +105,21 @@ describe("when there are initial blogs saved", () => {
     checkPage(firstPage, page);
   });
 });
+
+describe("retrieving a blog via its slug", () => {
+  test("works when the slug is valid", async () => {
+    const blogs = helper.visibleBlogs();
+
+    for (let blog of blogs) {
+      const slug = blog.slug;
+      const response = await api.get(`/api/blogs/${slug}`).expect(200);
+
+      expect(response.body).toEqual(expect.objectContaining(blog));
+    }
+  });
+
+  test("fails with status 404 when the slug is invalid", async () => {
+    const invalidSlug = "this-blog-does-not-exist";
+    await api.get(`/api/blogs/${invalidSlug}`).expect(404);
+  });
+});

@@ -96,6 +96,7 @@ const pages = () => {
 module.exports = {
   postsPerPage,
   insertInitialBlogs,
+  initialBlogs,
   deleteAll,
   visibleBlogs,
   visibleBlogCount,

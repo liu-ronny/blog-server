@@ -15,6 +15,11 @@ const blogSchema = new mongoose.Schema({
   tags: [{ type: String }],
   date: { type: Date, default: Date.now },
   hidden: { type: Boolean, default: false },
+  // user: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   ref: "User",
+  //   required: true,
+  // },
 });
 
 blogSchema.set("toJSON", {
@@ -23,8 +28,10 @@ blogSchema.set("toJSON", {
     delete returnedObject._id;
     delete returnedObject.__v;
 
-    // keep the hidden property during testing
+    // avoid deleting certain properties in a test environment to facilitate
+    // unit tests
     if (process.env.NODE_ENV !== "test") {
+      delete returnedObject.slug;
       delete returnedObject.hidden;
     }
 
