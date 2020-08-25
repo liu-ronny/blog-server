@@ -18,7 +18,8 @@ afterEach(async () => {
   await helper.deleteAll();
 });
 
-afterAll(() => {
+afterAll(async () => {
+  await mongoose.connection.db.collection("sessions").deleteMany({});
   mongoose.connection.close();
 });
 

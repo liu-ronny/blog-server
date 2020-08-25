@@ -34,7 +34,7 @@ usersRouter.post("/", adminRequired, async (req, res) => {
 usersRouter.use((err, req, res, next) => {
   switch (err.name) {
     case "ValidationError":
-      res.status(400).json({ error: err.message });
+      return res.status(400).json({ error: err.message });
     default:
       return res.status(500).json({
         error: "an error occurred on the server - please check logs to debug",

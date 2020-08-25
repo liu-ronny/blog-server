@@ -1,5 +1,3 @@
-const slugify = require("slugify");
-
 const blogPost = (req, res, next) => {
   const data = req.body;
 

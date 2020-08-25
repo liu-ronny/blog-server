@@ -3,6 +3,7 @@ const express = require("express");
 require("express-async-errors");
 const app = express();
 const session = require("express-session");
+const MongoStore = require("connect-mongo")(session);
 const mongoose = require("mongoose");
 const passport = require("passport");
 const configurePassport = require("./config/passport");
@@ -20,16 +21,21 @@ mongoose.connect(env.MONGODB_URI, {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const twentyFourHours = 86400000;
+const twentyFourHours = 1000 * 60 * 60 * 24;
 app.use(
   session({
-    secret: process.env.SECRET,
+    secret: process.env.SESSION_SECRET,
     cookie: {
       httpOnly: true,
       maxAge: twentyFourHours,
     },
     resave: false,
     saveUninitialized: false,
+    rolling: true,
+    store: new MongoStore({
+      mongooseConnection: mongoose.connection,
+      secret: process.env.SESSION_STORE_SECRET,
+    }),
   })
 );
 

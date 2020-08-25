@@ -4,7 +4,6 @@
 
 const mongoose = require("mongoose");
 const supertest = require("supertest");
-const slugify = require("slugify");
 const app = require("../../app");
 
 const api = supertest(app);
@@ -23,7 +22,8 @@ afterEach(async () => {
   await helper.deleteAll();
 });
 
-afterAll(() => {
+afterAll(async () => {
+  await mongoose.connection.db.collection("sessions").deleteMany({});
   mongoose.connection.close();
 });
 
