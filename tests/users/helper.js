@@ -20,6 +20,17 @@ const usersWithHashedPasswords = () => {
   });
 };
 
+const nonExistentId = async () => {
+  const user = { username: "willsoon", passwordHash: "notexist" };
+  const newUser = await User.create(user);
+
+  const id = newUser._id;
+
+  await User.findByIdAndDelete(id);
+
+  return id;
+};
+
 const admin = () => {
   return { ...initialUsers[0] };
 };
@@ -74,4 +85,5 @@ module.exports = {
   deleteAll,
   parseCookie,
   login,
+  nonExistentId,
 };

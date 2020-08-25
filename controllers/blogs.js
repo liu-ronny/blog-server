@@ -1,19 +1,42 @@
 const loginRequired = require("../middleware/loginRequired");
 const blogPost = require("../middleware/blogPost");
+const userBlogs = require("../middleware/userBlogs");
+const tags = require("../middleware/tags");
+const blogBySlug = require("../middleware/blogBySlug");
 const blogsRouter = require("express").Router();
 const Blog = require("../models/blog");
 
 /**
- * Returns all visible blogs on the requested page. If the page property is
- * not provided in the request query string, or if the page property is not
- * a valid page number, the contents of the first page will be served.
+ * Returns all visible blogs on the requested page. The tag property takes
+ * precendence over the page property. If the tag property is specified, the
+ * blogs with that tag will be returned. If the tag property is not specified,
+ * it is assumed that the query is a page query.If the page property is not
+ * provided in the request query string, or if the page property is not a
+ * valid page number, the contents of the first page will be served.
  * @name get/
  * @function
  * @memberof blogsRouter
  * @param {string} path - Express path
  * @param {Function} middleware - Express middleware
+ *
+ * @example
+ * // returns the first page of the blog
+ * "/api/blogs"
+ *
+ * // returns the third page of the blog
+ * "/api/blogs?page=3"
+ *
+ * // returns the first page of the blog
+ * "/api/blogs?page=invalid"
+ *
+ * // returns all blogs with the tag javascript
+ * "/api/blogs?tag=javascript"
+ *
+ * // returns all blogs with the tag javascript
+ * "/api/blogs?tag=javascript&page=1"
+ *
  */
-blogsRouter.get("/", async (req, res) => {
+blogsRouter.get("/", userBlogs, tags, async (req, res) => {
   let page = parseInt(req.query.page);
   page = isNaN(page) || page <= 0 ? 0 : page - 1;
 
@@ -42,18 +65,13 @@ blogsRouter.get("/", async (req, res) => {
  * @param {string} path - Express path
  * @param {Function} middleware - Express middleware
  */
-blogsRouter.get("/:slug", async (req, res) => {
-  const slug = req.params.slug;
-  const blog = await Blog.findOne({ slug, hidden: false }).populate(
-    "author",
-    "-blogs -username"
-  );
+blogsRouter.get("/:slug", blogBySlug, async (req, res) => {
+  res.json(req.blog);
 
-  if (!blog) {
-    return res.status(404).json({ error: "the requested blog does not exist" });
-  }
+  // let withCsrf = req.query.withCsrf;
 
-  res.json(blog);
+  // if (withCsrf && withCsrf.toLowerCase() === "true") {
+  // }
 });
 
 /**

@@ -88,7 +88,7 @@ describe("when there are initial blogs saved", () => {
     });
   });
 
-  test("pagination works", async () => {
+  test("pagination works and is the default when no query parameters are set", async () => {
     const pages = helper.pages();
     const checkPage = (expectedPage, page) => {
       expect(page).toHaveLength(expectedPage.length);
@@ -101,38 +101,241 @@ describe("when there are initial blogs saved", () => {
     const firstPage = pages[0];
 
     // negative page number should return the first page
-    let page = (await api.get("/api/blogs").query({ page: "-1" })).body;
+    let page = (await api.get("/api/blogs").query({ page: "-1" }).expect(200))
+      .body;
     checkPage(firstPage, page);
 
     // a page number of 0 should return the first page
-    page = (await api.get("/api/blogs").query({ page: "0" })).body;
+    page = (await api.get("/api/blogs").query({ page: "0" }).expect(200)).body;
     checkPage(firstPage, page);
 
     // a valid page number should return that page
     for (let i = 0; i < pages.length; i++) {
-      page = (await api.get("/api/blogs").query({ page: `${i + 1}` })).body;
+      page = (
+        await api
+          .get("/api/blogs")
+          .query({ page: `${i + 1}` })
+          .expect(200)
+      ).body;
       checkPage(pages[i], page);
     }
 
     // a page number greater than the actual number of pages should return the first page
-    page = (await api.get("/api/blogs").query({ page: `${pages.length + 1}` }))
-      .body;
+    page = (
+      await api
+        .get("/api/blogs")
+        .query({ page: `${pages.length + 1}` })
+        .expect(200)
+    ).body;
     checkPage(firstPage, page);
 
     // an invalid page number should return the first page
-    page = (await api.get("/api/blogs").query({ page: "1a" })).body;
+    page = (await api.get("/api/blogs").query({ page: "1a" }).expect(200)).body;
     checkPage(firstPage, page);
 
-    page = (await api.get("/api/blogs").query({ page: "abcdefg" })).body;
-    checkPage(firstPage, page);
-
-    page = (await api.get("/api/blogs").query({ page: "199321348732378" }))
+    page = (await api.get("/api/blogs").query({ page: "abcdefg" }).expect(200))
       .body;
     checkPage(firstPage, page);
 
-    // a request without a specified page should return the first page
-    page = (await api.get("/api/blogs")).body;
+    page = (
+      await api.get("/api/blogs").query({ page: "199321348732378" }).expect(200)
+    ).body;
     checkPage(firstPage, page);
+
+    // a request without a specified page should return the first page
+    page = (await api.get("/api/blogs").expect(200)).body;
+    checkPage(firstPage, page);
+  });
+
+  test("querying by tags works", async () => {
+    const doggoBlogs = (await helper.blogsInDb())
+      .filter(
+        (blog) => blog.tags && blog.tags.includes("doggo") && !blog.hidden
+      )
+      .sort((a, b) => a.id.toString().localeCompare(b.id.toString()))
+      .map((blog) => blog.id.toString());
+
+    // check that querying by the doggo tag returns all doggo posts
+    const response = await api
+      .get("/api/blogs")
+      .query({ tag: "doggo" })
+      .expect(200);
+    const blogs = response.body
+      .sort((a, b) => a.id.toString().localeCompare(b.id.toString()))
+      .map((blog) => blog.id.toString());
+
+    expect(blogs).toEqual(doggoBlogs);
+  });
+
+  test("querying by tags takes precedence over querying by page", async () => {
+    const doggoBlogs = (await helper.blogsInDb())
+      .filter(
+        (blog) => blog.tags && blog.tags.includes("doggo") && !blog.hidden
+      )
+      .sort((a, b) => a.id.toString().localeCompare(b.id.toString()))
+      .map((blog) => blog.id.toString());
+
+    let response = await api
+      .get("/api/blogs")
+      .query({ tag: "doggo", page: "1" })
+      .expect(200);
+    let blogs = response.body
+      .sort((a, b) => a.id.toString().localeCompare(b.id.toString()))
+      .map((blog) => blog.id.toString());
+
+    expect(blogs).toEqual(doggoBlogs);
+  });
+
+  test("querying by user works", async () => {
+    const admin = usersHelper.admin();
+    const adminInDb = await usersHelper.adminInDb();
+    const sessionId = await usersHelper.login(
+      api,
+      admin.username,
+      admin.password
+    );
+    const adminBlogs = (await helper.blogsInDb())
+      .filter((blog) => blog.author.toString() === adminInDb.id.toString())
+      .sort((a, b) => a.id.toString().localeCompare(b.id.toString()));
+
+    // check that a query for all of the admin's blogs works
+    let response = await api
+      .get("/api/blogs")
+      .query({ user: adminInDb.id })
+      .set("Cookie", `connect.sid=${sessionId}`)
+      .expect(200);
+
+    let blogs = response.body
+      .sort((a, b) => a.id.toString().localeCompare(b.id.toString()))
+      .map((blog) => blog.id);
+
+    const allAdminBlogs = adminBlogs.map((blog) => blog.id);
+
+    expect(blogs).toEqual(allAdminBlogs);
+
+    // check that a query for the admin's visible blogs works
+    response = await api
+      .get("/api/blogs")
+      .query({ user: adminInDb.id, filter: "visible" })
+      .set("Cookie", `connect.sid=${sessionId}`)
+      .expect(200);
+
+    blogs = response.body
+      .sort((a, b) => a.id.toString().localeCompare(b.id.toString()))
+      .map((blog) => blog.id);
+
+    const visibleAdminBlogs = adminBlogs
+      .filter((blog) => !blog.hidden)
+      .map((blog) => blog.id);
+
+    expect(blogs).toEqual(visibleAdminBlogs);
+
+    // check that a query for the admin's hidden blogs works
+    response = await api
+      .get("/api/blogs")
+      .query({ user: adminInDb.id, filter: "hidden" })
+      .set("Cookie", `connect.sid=${sessionId}`)
+      .expect(200);
+
+    blogs = response.body
+      .sort((a, b) => a.id.toString().localeCompare(b.id.toString()))
+      .map((blog) => blog.id);
+
+    const hiddenAdminBlogs = adminBlogs
+      .filter((blog) => blog.hidden)
+      .map((blog) => blog.id);
+
+    expect(blogs).toEqual(hiddenAdminBlogs);
+  });
+
+  test("querying by user with an invalid filter parameter fails with status 400", async () => {
+    const admin = usersHelper.admin();
+    const adminInDb = await usersHelper.adminInDb();
+    const sessionId = await usersHelper.login(
+      api,
+      admin.username,
+      admin.password
+    );
+
+    const response = await api
+      .get("/api/blogs")
+      .query({ user: adminInDb.id, filter: "invalid" })
+      .set("Cookie", `connect.sid=${sessionId}`)
+      .expect(400);
+
+    expect(response.body.error).toBeDefined();
+  });
+
+  test("querying by user while not logged in fails with status 401", async () => {
+    const adminInDb = await usersHelper.adminInDb();
+
+    const response = await api
+      .get("/api/blogs")
+      .query({ user: adminInDb.id })
+      .expect(401);
+
+    expect(response.body.error).toBeDefined();
+  });
+
+  test("querying by user while logged in as another user fails with status 401", async () => {
+    const admin = usersHelper.admin();
+    const sessionId = await usersHelper.login(
+      api,
+      admin.username,
+      admin.password
+    );
+    const nonExistentUserId = await usersHelper.nonExistentId();
+
+    const response = await api
+      .get("/api/blogs")
+      .query({ user: nonExistentUserId.toString() })
+      .set("Cookie", `connect.sid=${sessionId}`)
+      .expect(401);
+
+    expect(response.body.error).toBeDefined();
+  });
+
+  test("querying by malformed user id while logged in as another user fails with status 400", async () => {
+    const admin = usersHelper.admin();
+    const sessionId = await usersHelper.login(
+      api,
+      admin.username,
+      admin.password
+    );
+
+    const response = await api
+      .get("/api/blogs")
+      .query({ user: "invalidid" })
+      .set("Cookie", `connect.sid=${sessionId}`)
+      .expect(400);
+
+    expect(response.body.error).toBeDefined();
+  });
+
+  test("querying by user takes precedence over other query parameters", async () => {
+    const admin = usersHelper.admin();
+    const adminInDb = await usersHelper.adminInDb();
+    const sessionId = await usersHelper.login(
+      api,
+      admin.username,
+      admin.password
+    );
+    const adminBlogs = (await helper.blogsInDb())
+      .filter((blog) => blog.author.toString() === adminInDb.id.toString())
+      .sort((a, b) => a.id.toString().localeCompare(b.id.toString()))
+      .map((blog) => blog.id);
+
+    let response = await api
+      .get("/api/blogs")
+      .query({ user: adminInDb.id, tag: "doggo", page: "2" })
+      .set("Cookie", `connect.sid=${sessionId}`)
+      .expect(200);
+
+    let blogs = response.body
+      .sort((a, b) => a.id.toString().localeCompare(b.id.toString()))
+      .map((blog) => blog.id);
+
+    expect(blogs).toEqual(adminBlogs);
   });
 });
 
