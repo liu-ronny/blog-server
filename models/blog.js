@@ -5,21 +5,30 @@
 
 const mongoose = require("mongoose");
 const uniqueValidator = require("mongoose-unique-validator");
+const slugify = require("slugify");
 const { formatDate } = require("../utils/utils");
 
 const blogSchema = new mongoose.Schema({
-  slug: { type: String, required: true, unique: true },
+  slug: { type: String, unique: true },
   title: { type: String, required: true },
   previewText: { type: String, required: true },
   body: { type: String, required: true },
   tags: [{ type: String }],
   date: { type: Date, default: Date.now },
   hidden: { type: Boolean, default: false },
-  // user: {
-  //   type: mongoose.Schema.Types.ObjectId,
-  //   ref: "User",
-  //   required: true,
-  // },
+  author: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+});
+
+blogSchema.pre("save", function (next) {
+  if (this.title) {
+    this.slug = slugify(this.title, { lower: true });
+  }
+
+  next();
 });
 
 blogSchema.set("toJSON", {
@@ -31,7 +40,6 @@ blogSchema.set("toJSON", {
     // avoid deleting certain properties in a test environment to facilitate
     // unit tests
     if (process.env.NODE_ENV !== "test") {
-      delete returnedObject.slug;
       delete returnedObject.hidden;
     }
 

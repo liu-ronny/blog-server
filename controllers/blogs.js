@@ -1,4 +1,5 @@
 const loginRequired = require("../middleware/loginRequired");
+const blogPost = require("../middleware/blogPost");
 const blogsRouter = require("express").Router();
 const Blog = require("../models/blog");
 
@@ -26,13 +27,14 @@ blogsRouter.get("/", async (req, res) => {
   const blogs = await Blog.find({ hidden: false })
     .sort({ date: "desc" })
     .skip(page * blogsPerPage)
-    .limit(blogsPerPage);
+    .limit(blogsPerPage)
+    .populate("author", "-blogs -username");
 
   res.json(blogs);
 });
 
 /**
- * Returns the blog that corresponds to the requested slug. If the slug is
+ * Returns the blog that corresponds to the specified slug. If the slug is
  * invalid, a 404 response is returned.
  * @name get/:slug
  * @function
@@ -42,13 +44,86 @@ blogsRouter.get("/", async (req, res) => {
  */
 blogsRouter.get("/:slug", async (req, res) => {
   const slug = req.params.slug;
-  const blog = await Blog.findOne({ slug });
+  const blog = await Blog.findOne({ slug, hidden: false }).populate(
+    "author",
+    "-blogs -username"
+  );
 
   if (!blog) {
-    return res.status(404).json({ error: "The requested blog does not exist" });
+    return res.status(404).json({ error: "the requested blog does not exist" });
   }
 
   res.json(blog);
+});
+
+/**
+ * Edits the blog that corresponds to the specified id.
+ * @name put/:id
+ * @function
+ * @memberof blogsRouter
+ * @param {string} path - Express path
+ * @param {Function} loginRequired - Express middleware that checks whether the user is logged in
+ * @param {Function} blogPost - Express middleware that creates a req.blog object if the necessary fields are provided in the request
+ * @param {Function} middleware - Express middleware
+ */
+blogsRouter.put("/:id", loginRequired, blogPost, async (req, res) => {
+  const user = req.user;
+  const blog = req.blog;
+  const id = req.params.id;
+
+  const savedBlog = await Blog.findById(id);
+
+  if (!savedBlog) {
+    return res.status(404).json({ error: "the blog to edit does not exist" });
+  }
+
+  if (savedBlog.author.toString() !== user._id.toString()) {
+    return res
+      .status(401)
+      .json({ error: "you do not have permission to edit this post" });
+  }
+
+  for (const [field, value] of Object.entries(blog)) {
+    savedBlog[field] = value;
+  }
+
+  await savedBlog.save();
+
+  res.status(204).end();
+});
+
+/**
+ * Deletes the blog that corresponds to the specified id. This deletes both the
+ * blog as well as the author's reference to the the blog from the database.
+ * @name delete/:id
+ * @function
+ * @memberof blogsRouter
+ * @param {string} path - Express path
+ * @param {Function} loginRequired - Express middleware that checks whether the user is logged in
+ * @param {Function} middleware - Express middleware
+ */
+blogsRouter.delete("/:id", loginRequired, async (req, res) => {
+  const user = req.user;
+  const id = req.params.id;
+
+  const blog = await Blog.findById(id);
+
+  if (!blog) {
+    return res.status(404).json({ error: "the blog to delete does not exist" });
+  }
+
+  if (blog.author.toString() !== user._id.toString()) {
+    return res
+      .status(401)
+      .json({ error: "you do not have permission to delete this post" });
+  }
+
+  await Blog.findByIdAndDelete(id);
+
+  user.blogs = user.blogs.map((blogId) => blogId.toString() !== id.toString());
+  await user.save();
+
+  res.status(204).end();
 });
 
 /**
@@ -58,26 +133,21 @@ blogsRouter.get("/:slug", async (req, res) => {
  * @memberof blogsRouter
  * @param {string} path - Express path
  * @param {Function} loginRequired - Express middleware that checks whether the user is logged in
+ * @param {Function} blogPost - Express middleware that creates a req.blog object if the necessary fields are provided in the request
  * @param {Function} middleware - Express middleware
  */
-// blogsRouter.post("/", loginRequired, async (req, res) => {
-//   let page = parseInt(req.query.page);
-//   page = isNaN(page) || page <= 0 ? 0 : page - 1;
+blogsRouter.post("/", loginRequired, blogPost, async (req, res) => {
+  const user = req.user;
+  const blog = req.blog;
 
-//   const blogsPerPage = parseInt(process.env.POSTS_PER_PAGE);
-//   const blogCount = await Blog.countDocuments({ hidden: false });
+  let newBlog = await Blog.create(blog);
+  newBlog = await newBlog.populate("author", "-blogs -username").execPopulate();
 
-//   if (page * blogsPerPage > blogCount) {
-//     page = 0;
-//   }
+  user.blogs.push(newBlog._id);
+  await user.save();
 
-//   const blogs = await Blog.find({ hidden: false })
-//     .sort({ date: "desc" })
-//     .skip(page * blogsPerPage)
-//     .limit(blogsPerPage);
-
-//   res.json(blogs);
-// });
+  res.status(201).json(newBlog);
+});
 
 /**
  * Handles errors for the the blog router routes.
@@ -87,15 +157,16 @@ blogsRouter.get("/:slug", async (req, res) => {
  * @param {Function} middleware - Express middleware
  */
 blogsRouter.use((err, req, res, next) => {
+  // console.log(err);
   switch (err.name) {
     case "CastError":
-      return res.status(401).json({ error: `invalid request: ${err.message}` });
+      return res.status(400).json({ error: `invalid request: ${err.message}` });
     case "ValidationError":
       return res
-        .status(401)
+        .status(400)
         .json({ error: `validation failed: ${err.message}` });
     case "MongoError":
-      return res.status(401).json({
+      return res.status(400).json({
         error: `Mongo error: ${err.message}`,
       });
     default:

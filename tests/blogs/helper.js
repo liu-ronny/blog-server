@@ -3,8 +3,9 @@
  */
 
 const Blog = require("../../models/blog");
-const blogs = require("./fakeBlogs");
+const fakeBlogs = require("./fakeBlogs");
 const utils = require("../../utils/utils");
+const usersHelper = require("../users/helper");
 
 const postsPerPage = parseInt(process.env.POSTS_PER_PAGE);
 
@@ -13,7 +14,7 @@ const postsPerPage = parseInt(process.env.POSTS_PER_PAGE);
  * @returns {UnformattedBlog}
  */
 const initialBlogs = () => {
-  return blogs.map((blog) => {
+  return fakeBlogs.map((blog) => {
     return { ...blog, date: new Date(blog.date.getTime()) };
   });
 };
@@ -40,11 +41,57 @@ const visibleBlogs = () => {
   return blogs.filter((blog) => !blog.hidden);
 };
 
+const hiddenBlogs = () => {
+  let blogs = initialBlogs();
+
+  // sort the blogs by date in descending order
+  blogs.sort((a, b) => {
+    return b.date - a.date;
+  });
+
+  // convert the dates to the return format
+  blogs.forEach((blog) => {
+    blog.date = utils.formatDate(blog.date);
+  });
+
+  // filter out visible blogs
+  return blogs.filter((blog) => blog.hidden);
+};
+
 /**
  * Inserts a list of dummy blogs into the database.
  */
 const insertInitialBlogs = async () => {
-  await Blog.create(initialBlogs());
+  await usersHelper.insertInitialUsers();
+
+  const admin = await usersHelper.adminInDb();
+
+  const blogs = initialBlogs();
+  blogs.forEach((blog) => (blog.author = admin._id));
+
+  await Blog.create(blogs);
+};
+
+const nonExistentId = async () => {
+  const admin = await usersHelper.adminInDb();
+  const blog = {
+    title: "this will be deleted soon",
+    previewText: "filler",
+    body: "filler",
+    author: admin._id.toString(),
+  };
+
+  const newBlog = await Blog.create(blog);
+  const id = newBlog._id;
+
+  await Blog.findByIdAndDelete(id);
+
+  admin.blogs = admin.blogs.map(
+    (blogId) => blogId.toString() !== id.toString()
+  );
+  await admin.save();
+
+  return id;
 };
 
 /**
@@ -52,12 +99,13 @@ const insertInitialBlogs = async () => {
  */
 const deleteAll = async () => {
   await Blog.deleteMany({});
+  await usersHelper.deleteAll();
 };
 
-// const blogsInDb = async () => {
-//   const blogs = await Blog.find({});
-//   return blogs.map((blog) => blog.toJSON());
-// };
+const blogsInDb = async () => {
+  const blogs = await Blog.find({});
+  return blogs.map((blog) => blog.toJSON());
+};
 
 /**
  * Returns the number of blogs that are not hidden.
@@ -99,6 +147,9 @@ module.exports = {
   initialBlogs,
   deleteAll,
   visibleBlogs,
+  hiddenBlogs,
   visibleBlogCount,
   pages,
+  blogsInDb,
+  nonExistentId,
 };

@@ -4,6 +4,7 @@ const loginRequired = (req, res, next) => {
       .status(401)
       .json({ error: "you must be logged in to access this route" });
   }
+
   next();
 };
 

@@ -22,19 +22,7 @@ afterAll(() => {
   mongoose.connection.close();
 });
 
-const login = async (username, password) => {
-  const response = await api
-    .post("/api/login")
-    .send(`username=${username}`)
-    .send(`password=${password}`)
-    .expect(200);
-
-  const sessionId = helper.parseCookie(response.header["set-cookie"][0])[
-    "connect.sid"
-  ];
-
-  return sessionId;
-};
+const login = helper.login;
 
 const createUser = async (sessionId, username, password, statusCode) => {
   const response = api.post("/api/users");
@@ -67,7 +55,7 @@ describe("when there is an admin user saved", () => {
     const admin = helper.admin();
     const user = { username: "freshuser", password: "12345" };
 
-    const sessionId = await login(admin.username, admin.password);
+    const sessionId = await login(api, admin.username, admin.password);
     const newUser = await createUser(
       sessionId,
       user.username,
@@ -77,6 +65,7 @@ describe("when there is an admin user saved", () => {
 
     delete user.password;
     expect(newUser).toEqual(expect.objectContaining(user));
+    expect(newUser.name).toBe(user.username);
 
     await checkUserCount(user, true);
   });
@@ -85,7 +74,7 @@ describe("when there is an admin user saved", () => {
     const admin = helper.admin();
     const user = { username: "freshuser", password: "12345" };
 
-    const sessionId = await login(admin.username, admin.password);
+    const sessionId = await login(api, admin.username, admin.password);
 
     await createUser(sessionId, user.username, null, 400);
     await checkUserCount({ username: user.username }, false);
@@ -101,7 +90,7 @@ describe("when there is an admin user saved", () => {
     const admin = helper.admin();
     const user = { username: "admin", password: "12345" };
 
-    const sessionId = await login(admin.username, admin.password);
+    const sessionId = await login(api, admin.username, admin.password);
     await createUser(sessionId, user.username, user.password, 400);
 
     delete user.password;
@@ -112,7 +101,7 @@ describe("when there is an admin user saved", () => {
     const nonAdmin = helper.users()[1];
     const user = { username: "freshuser", password: "12345" };
 
-    const sessionId = await login(nonAdmin.username, nonAdmin.password);
+    const sessionId = await login(api, nonAdmin.username, nonAdmin.password);
     await createUser(sessionId, user.username, user.password, 401);
 
     delete user.password;

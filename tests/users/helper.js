@@ -24,6 +24,10 @@ const admin = () => {
   return { ...initialUsers[0] };
 };
 
+const adminInDb = async () => {
+  return await User.findOne({ username: "admin" });
+};
+
 const usersInDb = async () => {
   return await User.find({});
 };
@@ -46,12 +50,28 @@ const parseCookie = (cookie) => {
   return parsedCookie;
 };
 
+const login = async (api, username, password) => {
+  const response = await api
+    .post("/api/login")
+    .send(`username=${username}`)
+    .send(`password=${password}`)
+    .expect(200);
+
+  const sessionId = parseCookie(response.header["set-cookie"][0])[
+    "connect.sid"
+  ];
+
+  return sessionId;
+};
+
 module.exports = {
   insertInitialUsers,
   admin,
   users,
   usersWithHashedPasswords,
+  adminInDb,
   usersInDb,
   deleteAll,
   parseCookie,
+  login,
 };
