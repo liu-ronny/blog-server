@@ -2,7 +2,6 @@ const loginRequired = require("../middleware/loginRequired");
 const blogPost = require("../middleware/blogPost");
 const userBlogs = require("../middleware/userBlogs");
 const tags = require("../middleware/tags");
-const blogBySlug = require("../middleware/blogBySlug");
 const blogsRouter = require("express").Router();
 const Blog = require("../models/blog");
 
@@ -65,13 +64,19 @@ blogsRouter.get("/", userBlogs, tags, async (req, res) => {
  * @param {string} path - Express path
  * @param {Function} middleware - Express middleware
  */
-blogsRouter.get("/:slug", blogBySlug, async (req, res) => {
-  res.json(req.blog);
+blogsRouter.get("/:slug", async (req, res) => {
+  const slug = req.params.slug;
 
-  // let withCsrf = req.query.withCsrf;
+  const blog = await Blog.findOne({ slug, hidden: false }).populate(
+    "author",
+    "-blogs -username"
+  );
 
-  // if (withCsrf && withCsrf.toLowerCase() === "true") {
-  // }
+  if (!blog) {
+    return res.status(404).json({ error: "the requested blog does not exist" });
+  }
+
+  res.json(blog);
 });
 
 /**

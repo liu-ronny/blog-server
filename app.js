@@ -19,7 +19,6 @@ mongoose.connect(env.MONGODB_URI, {
 });
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 const twentyFourHours = 1000 * 60 * 60 * 24;
 app.use(
@@ -27,6 +26,7 @@ app.use(
     secret: process.env.SESSION_SECRET,
     cookie: {
       httpOnly: true,
+      sameSite: "strict",
       maxAge: twentyFourHours,
     },
     resave: false,

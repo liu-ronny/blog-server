@@ -6,7 +6,9 @@
   "scripts": {
     "start": "cross-env NODE_ENV=production node app.js",
     "dev": "cross-env NODE_ENV=development nodemon app.js",
-    "test": "cross-env NODE_ENV=test jest --verbose --runInBand"
+    "test": "cross-env NODE_ENV=test jest --verbose --runInBand",
+    "testCoverage": "npm test --coverage",
+    "coverage": "start coverage/lcov-report/index.html"
   },
   "author": "",
   "license": "ISC",
@@ -31,6 +33,9 @@
     "supertest": "^4.0.2"
   },
   "jest": {
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "controllers/*.js"
+    ]
   }
 }

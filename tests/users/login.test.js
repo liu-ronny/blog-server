@@ -32,8 +32,7 @@ describe("when there are initial users saved", () => {
     for (let user of users) {
       const response = await api
         .post("/api/login")
-        .send(`username=${user.username}`)
-        .send(`password=${user.password}`)
+        .send({ username: user.username, password: user.password })
         .expect(200);
 
       const cookie = helper.parseCookie(response.header["set-cookie"][0]);
@@ -48,14 +47,13 @@ describe("when there are initial users saved", () => {
   test("requests without valid credentials fail with status code 401", async () => {
     await api
       .post("/api/login")
-      .send(`username=invalid`)
-      .send(`password=superinvalid`)
+      .send({ username: "invalid", password: "superinvalid" })
       .expect(401);
   });
 
   test("requests missing the username or password property fail with status code 400", async () => {
-    await api.post("/api/login").send(`username=admin`).expect(400);
-    await api.post("/api/login").send(`password=hunter1`).expect(400);
+    await api.post("/api/login").send({ username: "admin" }).expect(400);
+    await api.post("/api/login").send({ password: "hunter1" }).expect(400);
     await api.post("/api/login").expect(400);
   });
 });

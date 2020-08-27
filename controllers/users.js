@@ -31,6 +31,11 @@ usersRouter.post("/", adminRequired, async (req, res) => {
   res.status(201).json(newUser);
 });
 
+usersRouter.get("/", adminRequired, async (req, res) => {
+  const users = await User.find({});
+  res.json(users);
+});
+
 usersRouter.use((err, req, res, next) => {
   switch (err.name) {
     case "ValidationError":

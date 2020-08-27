@@ -64,8 +64,7 @@ const parseCookie = (cookie) => {
 const login = async (api, username, password) => {
   const response = await api
     .post("/api/login")
-    .send(`username=${username}`)
-    .send(`password=${password}`)
+    .send({ username, password })
     .expect(200);
 
   const sessionId = parseCookie(response.header["set-cookie"][0])[

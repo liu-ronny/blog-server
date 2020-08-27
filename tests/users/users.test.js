@@ -29,8 +29,8 @@ const createUser = async (sessionId, username, password, statusCode) => {
   const response = api.post("/api/users");
 
   if (sessionId) response.set("Cookie", `connect.sid=${sessionId}`);
-  if (username) response.send(`username=${username}`);
-  if (password) response.send(`password=${password}`);
+  if (username) response.send({ username });
+  if (password) response.send({ password });
   response.expect(statusCode);
 
   return (await response).body;
@@ -116,5 +116,43 @@ describe("when there is an admin user saved", () => {
 
     delete user.password;
     await checkUserCount(user, false);
+  });
+
+  test("admin requests to get all users works", async () => {
+    const admin = helper.admin();
+    const sessionId = await login(api, admin.username, admin.password);
+
+    const response = await api
+      .get("/api/users")
+      .set("Cookie", `connect.sid=${sessionId}`)
+      .expect(200);
+    const users = response.body;
+
+    const usersInDb = (await helper.usersInDb()).map((user) => user.toJSON());
+
+    expect(users).toEqual(usersInDb);
+    expect(users).toHaveLength(usersInDb.length);
+  });
+
+  test("non-admin requests to get all users fails with status 401", async () => {
+    const user = { username: "testuser", password: "testpassword" };
+    const sessionId = await login(api, user.username, user.password);
+
+    // test getting all users with a logged in user who is not the admin
+    let response = await api
+      .get("/api/users")
+      .set("Cookie", `connect.sid=${sessionId}`)
+      .expect(401);
+    let users = response.body;
+
+    const usersInDb = (await helper.usersInDb()).map((user) => user.toJSON());
+
+    expect(users).not.toEqual(usersInDb);
+
+    // test getting all users with a user who is not logged in
+    response = await api.get("/api/users").expect(401);
+    users = response.body;
+
+    expect(users).not.toEqual(usersInDb);
   });
 });
