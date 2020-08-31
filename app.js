@@ -9,7 +9,9 @@ const passport = require("passport");
 const configurePassport = require("./config/passport");
 const blogsRouter = require("./controllers/blogs");
 const loginRouter = require("./controllers/login");
+const logoutRouter = require("./controllers/logout");
 const usersRouter = require("./controllers/users");
+const sessionsRouter = require("./controllers/sessions");
 
 mongoose.connect(env.MONGODB_URI, {
   useNewUrlParser: true,
@@ -45,6 +47,8 @@ app.use(passport.session());
 
 app.use("/api/blogs", blogsRouter);
 app.use("/api/login", loginRouter);
+app.use("/api/logout", logoutRouter);
 app.use("/api/users", usersRouter);
+app.use("/api/sessions", sessionsRouter);
 
 module.exports = app;

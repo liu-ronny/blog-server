@@ -8,6 +8,7 @@ const app = require("../../app");
 
 const api = supertest(app);
 const helper = require("./helper");
+const blogsHelper = require("../blogs/helper");
 
 beforeEach(async () => {
   await helper.deleteAll();
@@ -154,5 +155,59 @@ describe("when there is an admin user saved", () => {
     users = response.body;
 
     expect(users).not.toEqual(usersInDb);
+  });
+});
+
+describe("getting all blogs of a specific user", () => {
+  test("works when the user is logged in", async () => {
+    // create blogs through the api so they have authors associated with them
+    const adminBlog1 = {
+      title: "doggo doggo doggo",
+      previewText: "doggo",
+      body: "doggo doggo woof woof pupper doogo",
+      tags: ["doggo", "woof"],
+    };
+    const adminBlog2 = { ...adminBlog1, title: "super doggo" };
+    const adminBlog3 = { ...adminBlog2, title: "super duper doggo" };
+    const newAdminBlogs = [adminBlog1, adminBlog2, adminBlog3];
+
+    const admin = helper.admin();
+    const adminSessionId = await login(api, admin.username, admin.password);
+
+    for (let blog of newAdminBlogs) {
+      await api
+        .post("/api/posts")
+        .set("Cookie", `connect.sid=${adminSessionId}`)
+        .send(blog);
+    }
+
+    // check when the user has blogs
+    const adminInDb = await helper.adminInDb();
+    const blogsInDb = await blogsHelper.blogsInDb();
+    const adminBlogsInDb = blogsInDb
+      .map((blog) => blog.author.toString() === adminInDb._id.toString())
+      .forEach((blog) => delete blog.author);
+
+    let adminBlogs = (
+      await helper.getUserBlogs(api, 200, adminSessionId)
+    ).forEach((blog) => delete blog.author);
+
+    expect(adminBlogsInDb).toEqual(adminBlogs);
+
+    // check when the user has no blogs
+    const user = { username: "testuser", password: "testpassword" };
+    const userSessionId = await login(api, user.username, user.password);
+
+    const userBlogs = (await helper.getUserBlogs(api, 200, userSessionId)).body;
+
+    expect(userBlogs).toBeFalsy();
+  });
+
+  test("fails with status code 401 when the user is not logged in", async () => {
+    const response1 = await helper.getUserBlogs(api, 401);
+    const response2 = await helper.getUserBlogs(api, 401, "invalid");
+
+    expect(response1.body).toBeFalsy();
+    expect(response2.body).toBeFalsy();
   });
 });

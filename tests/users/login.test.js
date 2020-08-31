@@ -41,6 +41,14 @@ describe("when there are initial users saved", () => {
       expect(cookie.Path).toBe("/");
       expect(cookie.Expires).toBeDefined();
       expect(cookie.HttpOnly).toBeDefined();
+
+      // const returnedUser = response.body;
+      // expect(returnedUser.username).toBe(user.username);
+      // expect(returnedUser.name).toBe(user.username);
+      // expect(returnedUser.id).toBeDefined();
+      // expect(returnedUser.blogs).toBeDefined();
+      // expect(returnedUser.passwordHash).not.toBeDefined();
+      // expect(Object.keys(returnedUser)).toHaveLength(4);
     }
   });
 

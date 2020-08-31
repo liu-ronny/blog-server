@@ -74,6 +74,42 @@ const login = async (api, username, password) => {
   return sessionId;
 };
 
+const logout = async (api, sessionId) => {
+  const request = api.get("/api/logout");
+
+  if (sessionId) {
+    request.set("Cookie", `connect.sid=${sessionId}`);
+  }
+
+  await request.expect(200);
+};
+
+const checkSession = async (api, sessionId) => {
+  const request = api.get("/api/sessions");
+
+  if (sessionId) {
+    request.set("Cookie", `connect.sid=${sessionId}`);
+  }
+
+  const response = await request.expect(200);
+  const { authenticated } = response.body;
+
+  return authenticated;
+};
+
+const getUserBlogs = async (api, statusCode, sessionId) => {
+  const request = api.get("/api/users/my/blogs");
+
+  if (sessionId) {
+    request.set("Cookie", `connect.sid=${sessionId}`);
+  }
+
+  const response = await request.expect(statusCode);
+  const blogs = response.body;
+
+  return blogs;
+};
+
 module.exports = {
   insertInitialUsers,
   admin,
@@ -84,5 +120,8 @@ module.exports = {
   deleteAll,
   parseCookie,
   login,
+  logout,
+  checkSession,
+  getUserBlogs,
   nonExistentId,
 };
