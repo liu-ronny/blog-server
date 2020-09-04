@@ -1,3 +1,14 @@
+/**
+ * Middleware that populates the request object with a blog property. This
+ * creates an object that represents a new blog using the request body. It
+ * validates the request body and returns a 400 status code in the response
+ * if the body does not have the required fields. The resulting req.blog object
+ * will only use certain pre-defined fields and will ignore other parameters
+ * sent in the request body.
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 const blogPost = (req, res, next) => {
   const data = req.body;
 

@@ -1,3 +1,11 @@
+/**
+ * @fileoverview The blogs router for the the API. The express-async-errors
+ * library is used to avoid too many try/catch blocks when performing error
+ * handling. Any errors that occur in the route handlers are forwarded to the
+ * error handler middleware.
+ */
+
+const env = require("../config/environment");
 const loginRequired = require("../middleware/loginRequired");
 const blogPost = require("../middleware/blogPost");
 const userBlogs = require("../middleware/userBlogs");
@@ -9,7 +17,7 @@ const Blog = require("../models/blog");
  * Returns all visible blogs on the requested page. The tag property takes
  * precendence over the page property. If the tag property is specified, the
  * blogs with that tag will be returned. If the tag property is not specified,
- * it is assumed that the query is a page query.If the page property is not
+ * it is assumed that the query is a page query. If the page property is not
  * provided in the request query string, or if the page property is not a
  * valid page number, the contents of the first page will be served.
  * @name get/
@@ -39,7 +47,7 @@ blogsRouter.get("/", userBlogs, tags, async (req, res) => {
   let page = parseInt(req.query.page);
   page = isNaN(page) || page <= 0 ? 0 : page - 1;
 
-  const blogsPerPage = parseInt(process.env.POSTS_PER_PAGE);
+  const blogsPerPage = parseInt(env.POSTS_PER_PAGE);
   const blogCount = await Blog.countDocuments({ hidden: false });
 
   if (page * blogsPerPage > blogCount) {
@@ -57,7 +65,7 @@ blogsRouter.get("/", userBlogs, tags, async (req, res) => {
 
 /**
  * Returns the blog that corresponds to the specified slug. If the slug is
- * invalid, a 404 response is returned.
+ * invalid, a 404 status code is returned.
  * @name get/:slug
  * @function
  * @memberof blogsRouter
@@ -150,8 +158,8 @@ blogsRouter.delete("/:id", loginRequired, async (req, res) => {
 });
 
 /**
- * Creates a blog.
- * @name get/
+ * Creates a blog for a user.
+ * @name post/
  * @function
  * @memberof blogsRouter
  * @param {string} path - Express path
@@ -173,14 +181,13 @@ blogsRouter.post("/", loginRequired, blogPost, async (req, res) => {
 });
 
 /**
- * Handles errors for the the blog router routes.
+ * Handles errors for the blogs router.
  * @name error
  * @function
  * @memberof blogsRouter
  * @param {Function} middleware - Express middleware
  */
 blogsRouter.use((err, req, res, next) => {
-  // console.log(err);
   switch (err.name) {
     case "CastError":
       return res.status(400).json({ error: `invalid request: ${err.message}` });
@@ -190,11 +197,11 @@ blogsRouter.use((err, req, res, next) => {
         .json({ error: `validation failed: ${err.message}` });
     case "MongoError":
       return res.status(400).json({
-        error: `Mongo error: ${err.message}`,
+        error: `mongo error: ${err.message}`,
       });
     default:
       return res.status(500).json({
-        error: "an error occurred on the server - please check logs to debug",
+        error: "an error occurred on the server",
       });
   }
 });

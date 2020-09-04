@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Dummy user data used to seed the test database during testing.
+ */
+
 const initialUsers = [
   {
     username: "admin",

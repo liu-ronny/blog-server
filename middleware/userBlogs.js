@@ -1,6 +1,14 @@
 const mongoose = require("mongoose");
 const Blog = require("../models/blog");
 
+/**
+ * Middleware that returns the blogs belonging to a specific user. The request
+ * must be made by a logged in user, and the 'user' parameter in the query string
+ * must be the same user's id.
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 const userBlogs = async (req, res, next) => {
   const user = req.user;
   const filter = req.query.filter;

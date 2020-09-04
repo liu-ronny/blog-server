@@ -1,3 +1,10 @@
+/**
+ * @fileoverview The users router for the the API. The express-async-errors
+ * library is used to avoid too many try/catch blocks when performing error
+ * handling. Any errors that occur in the route handlers are forwarded to the
+ * error handler middleware.
+ */
+
 const bcrypt = require("bcrypt");
 const adminRequired = require("../middleware/adminRequired");
 const loginRequired = require("../middleware/loginRequired");
@@ -33,6 +40,16 @@ usersRouter.post("/", adminRequired, async (req, res) => {
   res.status(201).json(newUser);
 });
 
+/**
+ * Gets all existing users. This route is only accessible when logged in as the
+ * admin user.
+ * @name get/
+ * @function
+ * @memberof usersRouter
+ * @param {string} path - Express path
+ * @param {Function} adminRequired - Express middleware that checks whether the user is logged in as the admin
+ * @param {Function} middleware - Express middleware
+ */
 usersRouter.get("/", adminRequired, async (req, res) => {
   const users = await User.find({});
 
@@ -40,7 +57,7 @@ usersRouter.get("/", adminRequired, async (req, res) => {
 });
 
 /**
- * Gets all blogs belonging to a logged in user.
+ * Gets all blogs belonging to a specific, logged in user.
  * @name get/my/blogs
  * @function
  * @memberof usersRouter
@@ -59,6 +76,13 @@ usersRouter.get("/my/blogs", loginRequired, async (req, res) => {
   res.json(blogs);
 });
 
+/**
+ * Handles errors for the users router.
+ * @name error
+ * @function
+ * @memberof usersRouter
+ * @param {Function} middleware - Express middleware
+ */
 usersRouter.use((err, req, res, next) => {
   switch (err.name) {
     case "CastError":

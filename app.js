@@ -1,3 +1,9 @@
+/**
+ * @fileoverview The entry point for the application. Route handlers are
+ * modularized into several Router middlewares.
+ * @see {@link http://expressjs.com/en/guide/using-middleware.html#middleware.router|Express documentation}
+ */
+
 const env = require("./config/environment");
 const express = require("express");
 require("express-async-errors");
@@ -25,10 +31,9 @@ app.use(express.json());
 const twentyFourHours = 1000 * 60 * 60 * 24;
 app.use(
   session({
-    secret: process.env.SESSION_SECRET,
+    secret: env.SESSION_SECRET,
     cookie: {
       httpOnly: true,
-      sameSite: "strict",
       maxAge: twentyFourHours,
     },
     resave: false,
@@ -36,7 +41,7 @@ app.use(
     rolling: true,
     store: new MongoStore({
       mongooseConnection: mongoose.connection,
-      secret: process.env.SESSION_STORE_SECRET,
+      secret: env.SESSION_STORE_SECRET,
     }),
   })
 );

@@ -1,5 +1,14 @@
 const Blog = require("../models/blog");
 
+/**
+ * Middleware that populates the request object with a blog property. If a 'slug'
+ * parameter is provided in the request query string, the function will attempt
+ * to retrieve the blog that correspodns to the slug. If the slug is not found,
+ * the response will return the appropriate 4xx status code.
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 const blogBySlug = async (req, res, next) => {
   const slug = req.params.slug;
 

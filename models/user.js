@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Defines a Mongoose model that corresponds to the 'users'
+ * collection in MongoDB.
+ */
+
 const mongoose = require("mongoose");
 const uniqueValidator = require("mongoose-unique-validator");
 

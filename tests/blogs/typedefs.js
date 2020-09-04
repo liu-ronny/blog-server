@@ -1,6 +1,6 @@
 /**
  * @fileoverview Custom type definitions. This is so VS Code can provide
- * IntelliSense for some return types in other files.
+ * IntelliSense for these return types in other files.
  */
 
 /**

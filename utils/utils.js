@@ -1,4 +1,9 @@
 /**
+ * @fileoverview A module that provides utility functions to be used throughout
+ * the application.
+ */
+
+/**
  * Converts a JavaScript Date object into an object that contains the month as
  * a word, the date as a 2-digit string, and the year as a numeric string.
  * @param {Date} date - The date to convert
@@ -15,6 +20,12 @@ const formatDate = (date) => {
   return { month, day, year };
 };
 
+/**
+ * Checks whether both the username and the password parameters are provided.
+ * This is used for validating a login request.
+ * @param {string} username - The username of a user
+ * @param {string} password - The password of a user
+ */
 const checkForCredentials = (username, password) => {
   if (!username && !password) {
     return {

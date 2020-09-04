@@ -2,12 +2,13 @@
  * @fileoverview A set of utilites used for testing the blogs router.
  */
 
+const env = require("../../config/environment");
 const Blog = require("../../models/blog");
 const fakeBlogs = require("./fakeBlogs");
 const utils = require("../../utils/utils");
 const usersHelper = require("../users/helper");
 
-const postsPerPage = parseInt(process.env.POSTS_PER_PAGE);
+const postsPerPage = parseInt(env.POSTS_PER_PAGE);
 
 /**
  * Returns a copy of all initially inserted blogs. This includes hidden blogs.
@@ -72,6 +73,9 @@ const insertInitialBlogs = async () => {
   await Blog.create(blogs);
 };
 
+/**
+ * Returns a non-existent id.
+ */
 const nonExistentId = async () => {
   const admin = await usersHelper.adminInDb();
   const blog = {

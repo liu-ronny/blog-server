@@ -1,5 +1,5 @@
 /**
- * @fileoverview Dummy data used to seed the test database during testing.
+ * @fileoverview Dummy blog data used to seed the test database during testing.
  */
 
 const blogs = [

@@ -1,8 +1,9 @@
 /**
  * @fileoverview Defines a Mongoose model that corresponds to the 'blogs'
- * collection.
+ * collection in MongoDB.
  */
 
+const env = require("../config/environment");
 const mongoose = require("mongoose");
 const uniqueValidator = require("mongoose-unique-validator");
 const slugify = require("slugify");
@@ -37,9 +38,8 @@ blogSchema.set("toJSON", {
     delete returnedObject._id;
     delete returnedObject.__v;
 
-    // avoid deleting certain properties in a test environment to facilitate
-    // unit tests
-    if (process.env.NODE_ENV !== "test") {
+    // avoid deleting certain properties in a test environment
+    if (env.NODE_ENV !== "test") {
       delete returnedObject.hidden;
     }
 
